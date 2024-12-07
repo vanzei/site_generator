@@ -34,7 +34,7 @@ def extract_markdown_links(text):
 def split_nodes_image(old_nodes):
     new_nodes = []
     for old_node in old_nodes:
-        if old_node.text_type != TextType.TEXT:
+        if old_node.text_type != TextType.TEXT.value:
             new_nodes.append(old_node)
             continue
         original_text = old_node.text
@@ -64,7 +64,7 @@ def split_nodes_image(old_nodes):
 def split_nodes_link(old_nodes):
     new_nodes = []
     for old_node in old_nodes:
-        if old_node.text_type != TextType.TEXT:
+        if old_node.text_type != TextType.TEXT.value:
             new_nodes.append(old_node)
             continue
         original_text = old_node.text

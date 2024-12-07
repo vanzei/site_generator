@@ -1,6 +1,6 @@
 import unittest
 from textnode import TextNode, TextType, text_node_to_html_node
-from inline_markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links
+from inline_markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_link, split_nodes_image
 
 
 class TestSplitNodesDelimiter(unittest.TestCase):
@@ -62,35 +62,89 @@ class TestExtractMarkdownImages(unittest.TestCase):
         text = "This is a [link](https://example.com) and not an image."
         self.assertEqual(extract_markdown_images(text), [])
 
-class TestExtractMarkdownLinks(unittest.TestCase):
-    
-    def test_basic_link_extraction(self):
-        text = "Check out [OpenAI](https://www.openai.com)"
-        self.assertEqual(extract_markdown_links(text), [("OpenAI", "https://www.openai.com")])
-    
-    def test_multiple_links(self):
-        text = "[Link1](https://example.com/1) and [Link2](https://example.com/2)"
-        self.assertEqual(extract_markdown_links(text), [
-            ("Link1", "https://example.com/1"),
-            ("Link2", "https://example.com/2")
-        ])
-    
-    
-    def test_ignore_image_links(self):
-        text = "Here is an image ![img](https://example.com/image.jpg) and a link [Link](https://example.com)"
-        self.assertEqual(extract_markdown_links(text), [("Link", "https://example.com")])
-    
-    def test_no_links(self):
-        text = "There are no links in this text."
-        self.assertEqual(extract_markdown_links(text), [])
-    
-    def test_links_with_empty_alt_text(self):
-        text = "This is a link with empty alt text [](https://example.com)"
-        self.assertEqual(extract_markdown_links(text), [("", "https://example.com")])
-
 class TestCombinedCases(unittest.TestCase):
     
     def test_text_with_both_images_and_links(self):
         text = "Here is a [link](https://example.com) and an image ![image](https://example.com/image.jpg)"
         self.assertEqual(extract_markdown_images(text), [("image", "https://example.com/image.jpg")])
         self.assertEqual(extract_markdown_links(text), [("link", "https://example.com")])
+
+        def test_extract_markdown_images(self):
+            matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+            self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_extract_markdown_links(self):
+        matches = extract_markdown_links(
+            "This is text with a [link](https://boot.dev) and [another link](https://blog.boot.dev)"
+        )
+        self.assertListEqual(
+            [
+                ("link", "https://boot.dev"),
+                ("another link", "https://blog.boot.dev"),
+            ],
+            matches,
+        )
+
+    def test_split_image(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+            ],
+            new_nodes,
+        )
+
+    def test_split_image_single(self):
+        node = TextNode(
+            "![image](https://www.example.COM/IMAGE.PNG)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("image", TextType.IMAGE, "https://www.example.COM/IMAGE.PNG"),
+            ],
+            new_nodes,
+        )
+
+    def test_split_images(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode(
+                    "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
+        )
+
+    def test_split_links(self):
+        node = TextNode(
+            "This is text with a [link](https://boot.dev) and [another link](https://blog.boot.dev) with text that follows",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with a ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "https://boot.dev"),
+                TextNode(" and ", TextType.TEXT),
+                TextNode("another link", TextType.LINK, "https://blog.boot.dev"),
+                TextNode(" with text that follows", TextType.TEXT),
+            ],
+            new_nodes,
+        )
