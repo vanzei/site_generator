@@ -45,5 +45,4 @@ def text_node_to_html_node(text_node):
     
     raise ValueError(f"Invalid text type: {text_node.text_type}")
         
-        
 

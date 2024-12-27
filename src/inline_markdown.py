@@ -8,7 +8,6 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
 
         if node.text_type == text_type.TEXT.value:
             parts = node.text.split(delimiter)
-
             if len(parts) % 2 == 0:
                 raise ValueError("Unmatched delimiter found in text.")
 
@@ -83,3 +82,12 @@ def split_nodes_link(old_nodes):
         if original_text != "":
             new_nodes.append(TextNode(original_text, TextType.TEXT))
     return new_nodes
+
+def text_to_textnodes(text):
+    nodes = [TextNode(text, TextType.TEXT)]
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+    return nodes
